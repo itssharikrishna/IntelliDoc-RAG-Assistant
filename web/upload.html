@@ -1,0 +1,79 @@
+<!doctype html>
+<html>
+  <head><meta charset="utf-8" /><title>Upload test</title></head>
+  <body>
+    <h2>Upload Test (plain form)</h2>
+    <form action="/admin/upload" method="post" enctype="multipart/form-data">
+      <label>Token (paste only eyJ... token):</label><br/>
+      <input name="token" style="width:500px" placeholder="eyJ..."/><br/><br/>
+      <label>Choose PDF:</label><br/>
+      <input type="file" name="file" accept="application/pdf"/><br/><br/>
+      <button type="submit">Submit (native browser)</button>
+    </form>
+    <p>If the upload succeeds you will see the JSON response in the browser.</p>
+  </body>
+</html>
+<!doctype html>
+<html>
+  <head><meta charset="utf-8" /><title>Upload Debug</title></head>
+  <body>
+    <h2>Upload Debug</h2>
+
+    <label>Token (paste only eyJ...):</label><br/>
+    <input id="token" style="width:500px" placeholder="eyJ..."/><br/><br/>
+
+    <label>Choose PDF:</label><br/>
+    <input id="file" type="file" accept="application/pdf"/><br/><br/>
+
+    <button id="check">Check FormData (no upload)</button>
+    <button id="upload">Upload</button>
+
+    <h3>Debug output</h3>
+    <pre id="out" style="white-space:pre-wrap; border:1px solid #ccc; padding:10px;"></pre>
+
+    <script>
+      const out = document.getElementById('out');
+      document.getElementById('check').onclick = () => {
+        out.textContent = '';
+        const token = document.getElementById('token').value.trim();
+        const fileInput = document.getElementById('file');
+        const fd = new FormData();
+        fd.append('token', token);
+        if (fileInput.files.length > 0) fd.append('file', fileInput.files[0]);
+        else fd.append('file', new File([], 'EMPTY'));
+
+        // enumerate FormData
+        out.textContent += '--- FormData keys and values (report) ---\\n\\n';
+        for (const pair of fd.entries()) {
+          const k = pair[0];
+          const v = pair[1];
+          if (v instanceof File) {
+            out.textContent += `${k}: File name="${v.name}", size=${v.size}, type=${v.type}\\n`;
+          } else {
+            out.textContent += `${k}: "${v}"\\n`;
+          }
+        }
+      };
+
+      document.getElementById('upload').onclick = async () => {
+        out.textContent = 'Uploading...\\n';
+        const token = document.getElementById('token').value.trim();
+        const fileInput = document.getElementById('file');
+        if (!token) { out.textContent += 'Paste token first\\n'; return; }
+        if (!fileInput.files.length) { out.textContent += 'Choose a file first\\n'; return; }
+
+        const fd = new FormData();
+        fd.append('token', token);
+        fd.append('file', fileInput.files[0]);
+
+        try {
+          const resp = await fetch('/admin/upload', { method:'POST', body: fd });
+          const text = await resp.text();
+          out.textContent += `HTTP ${resp.status}\\n\\n${text}\\n`;
+        } catch (e) {
+          out.textContent += 'Network error: ' + e.toString();
+        }
+      };
+    </script>
+  </body>
+</html>

@@ -1,0 +1,87 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>RAG Query UI — Answer only</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; padding: 24px; max-width:900px; margin:auto; }
+    textarea { width:100%; height:120px; padding:8px; font-size:14px; }
+    button { margin-top:8px; padding:10px 14px; font-size:14px; border-radius:8px; cursor:pointer; }
+    .card { border:1px solid #e6e6e6; padding:12px; border-radius:8px; margin-top:12px; background:#fafafa; }
+    .muted { color:#666; font-size:13px; }
+    #answer { white-space:pre-wrap; font-size:15px; line-height:1.4; }
+  </style>
+</head>
+<body>
+  <h2>Ask the document</h2>
+  <p class="muted">Type a question about the uploaded PDF and press <strong>Send</strong>.</p>
+
+  <textarea id="queryInput" placeholder="e.g. What is electrolysis?"></textarea>
+  <br />
+  <button id="sendBtn">Send</button>
+  <span id="status" class="muted" style="margin-left:10px"></span>
+
+  <div id="result" style="display:none">
+    <div class="card">
+      <strong>Answer</strong>
+      <div id="answer" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+<script>
+(async function(){
+  const sendBtn = document.getElementById('sendBtn');
+  const queryInput = document.getElementById('queryInput');
+  const statusEl = document.getElementById('status');
+  const resultEl = document.getElementById('result');
+  const answerEl = document.getElementById('answer');
+
+  const base = 'http://localhost:8000'; // change if your API is elsewhere
+  const endpoint = base + '/query';
+
+  sendBtn.addEventListener('click', async () => {
+    const q = queryInput.value.trim();
+    if (!q) return alert('Type a question first.');
+
+    // UI
+    statusEl.textContent = 'Loading...';
+    sendBtn.disabled = true;
+    resultEl.style.display = 'none';
+    answerEl.textContent = '';
+
+    try {
+      const payload = { q };
+      const resp = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+          // add authentication here if your endpoint needs it, e.g.
+          // 'Authorization': 'Bearer <token>'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!resp.ok) {
+        const text = await resp.text();
+        throw new Error('HTTP ' + resp.status + ': ' + text);
+      }
+
+      const data = await resp.json();
+      // Expected shape: { answer: '...' }
+
+      // Show answer only
+      answerEl.textContent = data.answer || '(no answer returned)';
+
+      resultEl.style.display = 'block';
+      statusEl.textContent = '';
+    } catch (err) {
+      statusEl.textContent = 'Error: ' + err.message;
+    } finally {
+      sendBtn.disabled = false;
+    }
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+  <body>
+    <h3>RAG Assistant — Query</h3>
+    <input id="q" style="width:400px" placeholder="Ask a question..." />
+    <button onclick="ask()">Ask</button>
+
+    <h3>Answer:</h3>
+    <pre id="out" style="font-size:16px; white-space:pre-wrap;"></pre>
+
+    <script>
+      async function ask(){
+        const q = document.getElementById('q').value.trim();
+        if(!q){ alert("Please type a question"); return; }
+
+        const res = await fetch('/query', {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ q })
+        });
+
+        const data = await res.json();
+
+        // SHOW ONLY THE ANSWER
+        document.getElementById('out').innerText = data.answer || "No answer returned.";
+      }
+    </script>
+  </body>
+</html>
